@@ -1,33 +1,35 @@
-FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.8.0-cudnn9-runtime-ubuntu22.04
 
-# ------------------------
-# System / OS dependencies
-# ------------------------
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# System dependencies (REQUIRED)
 RUN apt-get update && apt-get install -y \
-    python3 \
+    python3.11 \
+    python3.11-dev \
     python3-pip \
     ffmpeg \
+    libsndfile1 \
     git \
     curl \
-    wget \
-    libgl1 \
-    libglib2.0-0 \
     ca-certificates \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# ------------------------
-# Python setup
-# ------------------------
+# Make python3.11 default
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python \
+ && ln -sf /usr/bin/python3.11 /usr/bin/python3
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip setuptools wheel
+
 WORKDIR /workspace
-COPY requirements.txt .
 
-RUN pip3 install --upgrade pip && \
-    pip3 install --no-cache-dir -r requirements.txt
+COPY requirements.txt /workspace/requirements.txt
 
-# ------------------------
-# Default
-# ------------------------
+# IMPORTANT: PyTorch CUDA 12.8 index
+RUN pip install --no-cache-dir \
+    --extra-index-url https://download.pytorch.org/whl/cu128 \
+    -r requirements.txt
+
 CMD ["bash"]
-
-
-
